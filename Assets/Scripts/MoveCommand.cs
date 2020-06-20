@@ -3,6 +3,7 @@
 /// This handles execution of the command as well as unexecution of the command
 /// </summary>
 
+using System.Collections;
 using UnityEngine;
 
 // A basic enum to describe our movement
@@ -27,15 +28,15 @@ class MoveCommand : Command
     }
 
     //Execute new command
-    public void Execute()
+    public IEnumerator Execute()
     {
-        _receiver.MoveOperation(_gameObject, _Map, _direction, _distance, false);
+        yield return _receiver.MoveOperation(_gameObject, _Map, _direction, _distance, false);
     }
 
     //Undo last command
-    public void UnExecute()
+    public IEnumerator UnExecute()
     {
-        _receiver.MoveOperation(_gameObject, _Map, _direction, _distance, true);
+        yield return _receiver.MoveOperation(_gameObject, _Map, _direction, _distance, true);
     }
 
     //So we can show this command in debug output easily

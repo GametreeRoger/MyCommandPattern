@@ -2,45 +2,51 @@
 /// The 'Receiver' class - this handles what a move command actually does
 /// </summary>
 
+using System.Collections;
+using DG.Tweening;
 using UnityEngine;
 
 class MoveCommandReceiver
 {
-    public void MoveOperation(GameObject gameObjectToMove, Map map, MoveDirection direction, float distance, bool isUndo)
+    const float MOVE_SPEED = 0.5f;
+    public IEnumerator MoveOperation(GameObject gameObjectToMove, Map map, MoveDirection direction, float distance, bool isUndo)
     {
         if (isUndo)
             direction = InverseDirection(direction);
 
+        map.UpdateRoleIndex(direction, isUndo);
+
         switch (direction)
         {
             case MoveDirection.up:
-                MoveY(gameObjectToMove, distance);
+                yield return MoveY(gameObjectToMove, distance);
                 break;
             case MoveDirection.down:
-                MoveY(gameObjectToMove, -distance);
+                yield return MoveY(gameObjectToMove, -distance);
                 break;
             case MoveDirection.left:
-                MoveX(gameObjectToMove, -distance);
+                yield return MoveX(gameObjectToMove, -distance);
                 break;
             case MoveDirection.right:
-                MoveX(gameObjectToMove, distance);
+            default:
+                yield return MoveX(gameObjectToMove, distance);
                 break;
         }
-        map.UpdateRoleIndex(direction, isUndo);
+        
     }
 
-    private void MoveY(GameObject gameObjectToMove, float distance)
+    IEnumerator MoveY(GameObject gameObjectToMove, float distance)
     {
         Vector3 newPos = gameObjectToMove.transform.position;
         newPos.y += distance;
-        gameObjectToMove.transform.position = newPos;
+        yield return gameObjectToMove.transform.DOMove(newPos, MOVE_SPEED).WaitForCompletion();
     }
 
-    private void MoveX(GameObject gameObjectToMove, float distance)
+    IEnumerator MoveX(GameObject gameObjectToMove, float distance)
     {
         Vector3 newPos = gameObjectToMove.transform.position;
         newPos.x += distance;
-        gameObjectToMove.transform.position = newPos;
+        yield return gameObjectToMove.transform.DOMove(newPos, MOVE_SPEED).WaitForCompletion();
     }
 
     //invert the direction for undo

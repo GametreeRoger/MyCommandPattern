@@ -41,19 +41,10 @@ public class Map : MonoBehaviour
             for (int j = 0; j < lines[i].Length; j++)
             {
                 mMapList[i].Add(lines[i][j]);
-                //Debug.Log(lines[i][j]);
             }
-            //Debug.LogFormat("length:{0}, {1}", lines[i].Length, lines[i]);
         }
 
         mMapSize = new Vector2(mMapList[0].Count, mMapList.Count);
-        //for(int i = 0; i < mMapList.Count; i++)
-        //{
-        //    for(int j = 0; j < mMapList[i].Count; j++)
-        //    {
-        //        Debug.Log(mMapList[i][j]);
-        //    }
-        //}
     }
 
     private void createMap()
@@ -63,13 +54,10 @@ public class Map : MonoBehaviour
         up_left.x = -((mMapSize.x - 1f) / 2f);
         up_left.y = (mMapSize.y - 1f) / 2f;
 
-        //Debug.LogFormat("up_left:{0}", up_left);
-
         for (int i = 0; i < mMapList.Count; i++)
         {
             for (int j = 0; j < mMapList[i].Count; j++)
             {
-                //Debug.Log(mMapList[i][j]);
                 if (mMapList[i][j] != '.')
                 {
                     getUnit(mMapList[i][j], new Vector3(up_left.x + j, up_left.y - i));
@@ -104,7 +92,6 @@ public class Map : MonoBehaviour
                 Role = oneUnit;
                 break;
         }
-        //return oneUnit;
     }
 
     private bool checkList(Vector2 index)

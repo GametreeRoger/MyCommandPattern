@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using DG.Tweening;
 using UnityEngine;
 
 public class MyCommandExample : MonoBehaviour
@@ -7,8 +8,7 @@ public class MyCommandExample : MonoBehaviour
     public float moveDistance = 1;
     public Map MapMgr;
     private MoveCommandReceiver moveCommandReciever;
-    private List<MoveCommand> commands = new List<MoveCommand>();
-    private int currentCommandNum = 0;
+    private Stack<MoveCommand> commands = new Stack<MoveCommand>();
 
     private GUIStyle guiStyle = new GUIStyle();
 
@@ -17,70 +17,45 @@ public class MyCommandExample : MonoBehaviour
         moveCommandReciever = new MoveCommandReceiver();
     }
 
-    public void Undo()
+    public IEnumerator Undo()
     {
         Debug.Log("Undo");
-        if (currentCommandNum > 0)
+        if (commands.Count > 0)
         {
-            currentCommandNum--;
-            MoveCommand moveCommand = commands[currentCommandNum];
-            moveCommand.UnExecute();
+            MoveCommand moveCommand = commands.Pop();
+            yield return moveCommand.UnExecute();
         }
     }
 
-    public void Redo()
-    {
-        if (currentCommandNum < commands.Count)
-        {
-            MoveCommand moveCommand = commands[currentCommandNum];
-            currentCommandNum++;
-            moveCommand.Execute();
-        }
-    }
-
-    private void Move(MoveDirection direction)
+    private IEnumerator Move(MoveDirection direction)
     {
         Debug.LogFormat("Move:{0}", direction);
         MoveCommand moveCommand = new MoveCommand(moveCommandReciever, direction, moveDistance, MapMgr.Role, MapMgr);
-        moveCommand.Execute();
-        commands.Add(moveCommand);
-        currentCommandNum++;
+        commands.Push(moveCommand);
+        yield return moveCommand.Execute();
     }
 
-
     //Simple move commands to attach to UI buttons
-    public void MoveUp() { Move(MoveDirection.up); }
-    public void MoveDown() { Move(MoveDirection.down); }
-    public void MoveLeft() { Move(MoveDirection.left); }
-    public void MoveRight() { Move(MoveDirection.right); }
+    public IEnumerator MoveUp() { yield return Move(MoveDirection.up); }
+    public IEnumerator MoveDown() { yield return Move(MoveDirection.down); }
+    public IEnumerator MoveLeft() { yield return Move(MoveDirection.left); }
+    public IEnumerator MoveRight() { yield return Move(MoveDirection.right); }
 
     //Shows what's going on in the command list
     void OnGUI()
     {
-        string label = "   start";
-        if (currentCommandNum == 0)
-        {
-            label = ">" + label;
-        }
-        label += "\n";
+        string label = "";
 
-        for (int i = 0; i < commands.Count; i++)
+        foreach(MoveCommand com in commands)
         {
-            if (i == currentCommandNum - 1)
-                label += "> " + commands[i].ToString() + "\n";
-            else
-                label += "   " + commands[i].ToString() + "\n";
-
+            label = "   " + com.ToString() + "\n" + label;
         }
         guiStyle.fontSize = 40;
         GUI.Label(new Rect(0, 0, 400, 800), label, guiStyle);
 
         if(GUI.Button(new Rect(500, 10, 100, 50), "start"))
         {
-            if (DeepFirstSearch())
-                Debug.Log("Goal!!!");
-            else
-                Debug.Log("Star can not found.....");
+            StartCoroutine(doSearchPath());
         }
     }
 
@@ -88,72 +63,88 @@ public class MyCommandExample : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.UpArrow))
         {
-            MoveUp();
+            StartCoroutine(MoveUp());
         }
         if (Input.GetKeyDown(KeyCode.DownArrow))
         {
-            MoveDown();
+            StartCoroutine(MoveDown());
         }
         if (Input.GetKeyDown(KeyCode.LeftArrow))
         {
-            MoveLeft();
+            StartCoroutine(MoveLeft());
         }
         if (Input.GetKeyDown(KeyCode.RightArrow))
         {
-            MoveRight();
-        }
-        if (Input.GetKeyDown(KeyCode.R))
-        {
-            Redo();
+            StartCoroutine(MoveRight());
         }
         if (Input.GetKeyDown(KeyCode.U))
         {
-            Undo();
+            StartCoroutine(Undo());
         }
     }
 
+    IEnumerator doSearchPath()
+    {
+        yield return DeepFirstSearch();
+        if (mIsRightWay)
+            Debug.Log("Goal!!!!");
+        else
+            Debug.Log("Star not found....");
+    }
 
-    bool DeepFirstSearch()
+    private bool mIsRightWay = false;
+
+    IEnumerator DeepFirstSearch()
     {
         if (MapMgr.IsGoal())
-            return true;
+        {
+            mIsRightWay = true;
+            
+            yield break;
+        }
 
         if (MapMgr.IsCanMove(MoveDirection.left))
         {
-            MoveLeft();
-            if (DeepFirstSearch())
-                return true;
+            yield return MoveLeft();
+            yield return DeepFirstSearch();
+
+            if (!mIsRightWay)
+                yield return Undo();
             else
-                Undo();
+                yield break;
         }
 
         if (MapMgr.IsCanMove(MoveDirection.up))
         {
-            MoveUp();
-            if (DeepFirstSearch())
-                return true;
+            yield return MoveUp();
+            yield return DeepFirstSearch();
+            if (!mIsRightWay)
+                yield return Undo();
             else
-                Undo();
+                yield break;
         }
 
         if (MapMgr.IsCanMove(MoveDirection.right))
         {
-            MoveRight();
-            if (DeepFirstSearch())
-                return true;
+            yield return MoveRight();
+            yield return DeepFirstSearch();
+            if (!mIsRightWay)
+                yield return Undo();
             else
-                Undo();
+                yield break;
         }
 
         if (MapMgr.IsCanMove(MoveDirection.down))
         {
-            MoveDown();
-            if (DeepFirstSearch())
-                return true;
+            yield return MoveDown();
+            yield return DeepFirstSearch();
+            if (!mIsRightWay)
+                yield return Undo();
             else
-                Undo();
+                yield break;
         }
 
-        return false;
+        mIsRightWay = false;
+        yield break;
     }
 }
